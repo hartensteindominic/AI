@@ -19,7 +19,7 @@ function assetSvg(asset:Asset){const size=22,ox=128,oy=155;const cubes=cellsFor(
 function PreviewAsset({asset}:{asset:Asset}){const svg=useMemo(()=>assetSvg(asset),[asset]);const data=`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;return <article className="assetCard"><div className="assetArt" style={{backgroundImage:`url("${data}")`}}/><span>{asset.name}</span></article>}
 
 const crcTable=(()=>{const table=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?0xedb88320^(c>>>1):c>>>1;table[n]=c>>>0}return table})();
-function crc32(data:Uint8Array){let c=0xffffffff;for(const byte of data)c=crcTable[(c^byte)&0xff]^(c>>>8);return(c^0xffffffff)>>>0}
+function crc32(data:Uint8Array){let c=0xffffffff;for(let i=0;i<data.length;i++){const byte=data[i];c=crcTable[(c^byte)&0xff]^(c>>>8)}return(c^0xffffffff)>>>0}
 function concat(parts:Uint8Array[]){const size=parts.reduce((sum,part)=>sum+part.length,0);const out=new Uint8Array(size);let offset=0;for(const part of parts){out.set(part,offset);offset+=part.length}return out}
 function header32(...values:number[]){const out=new Uint8Array(values.length*4);const view=new DataView(out.buffer);values.forEach((value,i)=>view.setUint32(i*4,value>>>0,true));return out}
 function header16(...values:number[]){const out=new Uint8Array(values.length*2);const view=new DataView(out.buffer);values.forEach((value,i)=>view.setUint16(i*2,value&0xffff,true));return out}
