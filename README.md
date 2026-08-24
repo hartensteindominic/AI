@@ -22,16 +22,17 @@ GhostForge intentionally shows an honest empty state when nothing qualifies. See
 
 Set `GITHUB_TOKEN` to a fine-grained, read-only token for more reliable GitHub API limits. The dashboard can use unauthenticated public API access at a lower rate limit. Never expose the token with a `NEXT_PUBLIC_` prefix.
 
-## Automated revenue loop
+## Autonomous revenue loop
 
-`.github/workflows/revenue-loop.yml` runs every two hours and can also be launched manually. It:
+`.github/workflows/revenue-loop.yml` runs every 30 minutes, after every push to `main`, and on manual request. It:
 
-1. runs scanner tests,
-2. scans current protected bounty listings,
-3. updates one persistent **GhostForge revenue queue** issue,
-4. publishes the full JSON and Markdown scan as a 14-day workflow artifact.
+1. installs from the lockfile,
+2. runs scanner tests,
+3. scans current protected bounty listings,
+4. updates one persistent **GhostForge revenue queue** issue,
+5. publishes the complete JSON and Markdown scan as a 14-day workflow artifact.
 
-The loop discovers and ranks opportunities. It does not auto-claim work, agree to terms, submit code, invoice a buyer, or move money.
+The queue is refreshed in place instead of generating endless duplicate issues. The loop discovers and ranks opportunities without waiting for a browser session.
 
 Run the same loop locally with:
 
@@ -42,9 +43,9 @@ GITHUB_TOKEN=your_read_token npm run scan:revenue
 
 Set `GHOSTFORGE_UPDATE_ISSUE=false` for a file-only local scan.
 
-## Automated code upgrades
+## Autonomous code upgrades
 
-`.github/dependabot.yml` checks npm dependencies every weekday morning and opens grouped minor/patch upgrade pull requests. Major upgrades remain separate so they receive an explicit review. Existing CI must pass before any upgrade should be merged.
+`.github/dependabot.yml` checks npm dependencies every weekday morning and opens grouped minor/patch upgrade pull requests. `.github/workflows/dependabot-automerge.yml` merges only those named safe groups after **GhostForge CI** has successfully completed all scanner tests and the production build. Major or non-grouped updates stay open for review.
 
 ## Qualification boundary
 
@@ -67,7 +68,7 @@ npm run build
 npm start
 ```
 
-GitHub Actions runs the production build for pushes to `main` and `ghostforge-v1`, and for pull requests into `main`.
+GitHub Actions runs the production build for pushes to `main` and for pull requests into `main`.
 
 ## Guardrails
 

@@ -1,8 +1,10 @@
 name: GhostForge revenue loop
 
 on:
+  push:
+    branches: [main]
   schedule:
-    - cron: '23 */2 * * *'
+    - cron: '7,37 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -22,10 +24,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
       - name: Test ranking and safety filters
-        run: node --test scripts/scanner.test.mjs
+        run: npm test
       - name: Scan and refresh the revenue queue
-        run: node scripts/revenue-scan.mjs
+        run: npm run scan:revenue
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GHOSTFORGE_OUTPUT_DIR: .ghostforge-output
