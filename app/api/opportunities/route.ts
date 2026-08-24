@@ -12,6 +12,8 @@ type GithubIssue = {
 const QUERIES = [
   'is:issue is:open label:bounty archived:false',
   'is:issue is:open label:reward archived:false',
+  'is:issue is:open "algora.io" archived:false',
+  'is:issue is:open "polar.sh" archived:false',
   'is:issue is:open "milestone funded" archived:false',
 ];
 
@@ -23,16 +25,40 @@ const MONEY_PATTERNS = [
 function payoutOf(text: string) {
   for (const pattern of MONEY_PATTERNS) {
     const match = text.match(pattern);
-    if (match) return Math.round(Number(match[1].replace(/,/g, '')));
+    if (match) {
+      const payout = Math.round(Number(match[1].replace(/,/g, '')));
+      return payout >= 25 && payout <= 100_000 ? payout : 0;
+    }
   }
   return 0;
 }
 
 function protectionOf(text: string) {
-  if (/algora|polar\.sh|polar bounty/i.test(text)) return { label: 'Platform bounty', confidence: 0.82 };
+  if (/https?:\/\/(?:www\.)?algora\.io\/[^\s)]+/i.test(text)) return { label: 'Algora link', confidence: 0.88 };
+  if (/https?:\/\/(?:www\.)?polar\.sh\/[^\s)]+/i.test(text)) return { label: 'Polar link', confidence: 0.86 };
   if (/escrow(?:ed)?|funds? (?:are )?(?:locked|secured)/i.test(text)) return { label: 'Escrow stated', confidence: 0.76 };
   if (/funded milestone|milestone funded/i.test(text)) return { label: 'Milestone stated', confidence: 0.7 };
   return { label: 'Unverified', confidence: 0 };
+}
+
+function automationOf(text: string, ageDays: number) {
+  let score = 35;
+  if (/acceptance criteria|definition of done|deliverables?|requirements?/i.test(text)) score += 18;
+  if (/test(?:s|ing)?|reproduc(?:e|ible|tion)|expected behavior/i.test(text)) score += 14;
+  if (/typescript|javascript|react|next\.js|node\.js|css|html/i.test(text)) score += 18;
+  if (/good first issue|beginner|small|straightforward|self[- ]contained/i.test(text)) score += 10;
+  if (ageDays > 14) score -= 12;
+  if (/first come|first-come|already claimed|assigned to/i.test(text)) score -= 20;
+  return Math.max(0, Math.min(100, score));
+}
+
+function risksOf(text: string, ageDays: number) {
+  const risks: string[] = [];
+  if (ageDays > 14) risks.push('Older than 14 days');
+  if (!/acceptance criteria|definition of done|deliverables?|requirements?/i.test(text)) risks.push('Acceptance criteria unclear');
+  if (/first come|first-come/i.test(text)) risks.push('Speed race');
+  if (/token|crypto|usdc|usdt|eth\b/i.test(text)) risks.push('Confirm payout currency');
+  return risks;
 }
 
 function hoursOf(text: string) {
@@ -80,17 +106,22 @@ export async function GET() {
       const protection = protectionOf(text);
       const hours = hoursOf(text);
       const ageDays = Math.max(0, (now - new Date(issue.updated_at).getTime()) / 86400000);
+      const automationScore = automationOf(text, ageDays);
+      const riskFlags = risksOf(text, ageDays);
       const freshness = ageDays <= 7 ? 1 : ageDays <= 30 ? 0.86 : 0.65;
-      const probability = Math.min(0.9, Number((protection.confidence * freshness).toFixed(2)));
+      const clarity = riskFlags.includes('Acceptance criteria unclear') ? 0.82 : 1;
+      const probability = Math.min(0.9, Number((protection.confidence * freshness * clarity).toFixed(2)));
+      const moneyScore = hours ? Math.round((payout * probability * (0.7 + automationScore / 333)) / hours) : 0;
       return {
         id: String(issue.id), title: issue.title, source: repoName(issue.repository_url),
         sourceUrl: issue.html_url, payout, hours, probability,
         competition: 'Check applicants', protection: protection.label,
         protectionVerified: protection.confidence > 0, updatedAt: issue.updated_at,
-        moneyScore: hours ? Math.round((payout * probability) / hours) : 0,
+        ageDays: Math.round(ageDays), automationScore, riskFlags, moneyScore,
+        recommendation: automationScore >= 70 && probability >= 0.65 && riskFlags.length <= 1 ? 'VERIFY FIRST' : 'REVIEW',
       };
-    }).filter(o => o.payout >= 50 && o.protectionVerified && o.moneyScore > 0)
-      .sort((a, b) => b.moneyScore - a.moneyScore).slice(0, 24);
+    }).filter(o => o.payout >= 50 && o.protectionVerified && o.moneyScore > 0 && o.ageDays <= 45)
+      .sort((a, b) => b.moneyScore - a.moneyScore || b.automationScore - a.automationScore).slice(0, 24);
 
     return NextResponse.json({
       opportunities,
@@ -98,7 +129,7 @@ export async function GET() {
       scanned: unique.size,
       qualified: opportunities.length,
       authenticated: Boolean(token),
-      methodology: 'Only open issues with an explicit payout and payment-protection evidence qualify.',
+      methodology: 'Open + explicit payout + linked/stated protection + updated within 45 days. Ranking adjusts expected return for clarity, freshness, and automation fit.',
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     return NextResponse.json({

@@ -5,7 +5,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 type Opportunity = {
   id:string; title:string; source:string; sourceUrl:string; payout:number; hours:number;
   probability:number; competition:string; protection:string; protectionVerified:boolean;
-  updatedAt:string; moneyScore:number;
+  updatedAt:string; moneyScore:number; ageDays:number; automationScore:number;
+  riskFlags:string[]; recommendation:'VERIFY FIRST'|'REVIEW';
 };
 type ScanResult = {
   opportunities:Opportunity[]; scannedAt?:string; scanned?:number; qualified?:number;
@@ -54,13 +55,13 @@ export default function Home(){
   {!!items.length&&<section className="table">
    <div className="row labels"><span>Opportunity</span><span>Payout</span><span>Est.</span><span>Money score</span><span>Protection</span></div>
    {items.map((o,i)=><button className="row opportunity" key={o.id} onClick={()=>setSelected(o)}>
-    <span><i className="rank">{String(i+1).padStart(2,'0')}</i><span><b>{o.title}</b><small>{o.source} · updated {new Date(o.updatedAt).toLocaleDateString()} · {o.competition}</small></span></span>
+    <span><i className="rank">{String(i+1).padStart(2,'0')}</i><span><b>{o.title}</b>{i===0&&<em className="first">TOP PICK</em>}<small>{o.source} · {o.ageDays}d old · automation {o.automationScore}/100</small></span></span>
     <strong>${o.payout.toLocaleString()}</strong><span>{o.hours}h*</span><span className="score">${o.moneyScore}/h</span><span className="safe">{o.protection}</span>
    </button>)}
   </section>}
   <section className="pipeline"><span>SCANNED <b>{scan?.scanned||0}</b></span><i>→</i><span>QUALIFIED <b>{items.length}</b></span><i>→</i><span>BUILDING <b>0</b></span><i>→</i><span>SUBMITTED <b>0</b></span><i>→</i><span>PAID <b>$0</b></span></section>
   <p className="method">* Hours and acceptance probability are conservative modeled estimates. Verify scope, eligibility, payout availability, and payment terms on the source before starting. {scan?.scannedAt&&`Last scan: ${new Date(scan.scannedAt).toLocaleString()}.`}</p>
-  {selected&&<div className="modal" onClick={()=>setSelected(null)}><article onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setSelected(null)} aria-label="Close">×</button><span className="eyebrow">LIVE OPPORTUNITY ANALYSIS</span><h2>{selected.title}</h2><div className="bigScore">${selected.moneyScore}<small> expected $ / hour</small></div><p>Listed payout <b>${selected.payout.toLocaleString()}</b> · modeled {selected.hours} hours · {Math.round(selected.probability*100)}% modeled acceptance probability.</p><div className="checks"><span>✓ Explicit payout</span><span>✓ {selected.protection}</span><span>↗ Source available</span></div><a className="start" href={selected.sourceUrl} target="_blank" rel="noreferrer">VERIFY & PURSUE →</a><small className="warning">Read the source and confirm funding before doing work. No application or submission is automatic.</small></article></div>}
+  {selected&&<div className="modal" onClick={()=>setSelected(null)}><article onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setSelected(null)} aria-label="Close">×</button><span className="eyebrow">{selected.recommendation}</span><h2>{selected.title}</h2><div className="bigScore">${selected.moneyScore}<small> expected $ / hour</small></div><p>Listed payout <b>${selected.payout.toLocaleString()}</b> · modeled {selected.hours} hours · {Math.round(selected.probability*100)}% modeled acceptance probability · automation fit {selected.automationScore}/100.</p><div className="checks"><span>✓ Explicit payout</span><span>✓ {selected.protection}</span><span>✓ Open source</span></div>{selected.riskFlags.length>0&&<div className="risks">{selected.riskFlags.map(r=><span key={r}>! {r}</span>)}</div>}<a className="start" href={selected.sourceUrl} target="_blank" rel="noreferrer">VERIFY FUNDING & CLAIM →</a><small className="warning">Confirm funding, eligibility, claim rules, and acceptance criteria before work begins. Submission stays manual.</small></article></div>}
   <footer>GHOSTFORGE <span>Found ≠ income. Accepted + paid = income.</span></footer>
  </main>
 }
