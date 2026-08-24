@@ -54,14 +54,60 @@ test('rejects listings without recognized payment protection', async () => {
   }
 });
 
-test('penalizes visible competition and assignments', async () => {
+test('rejects assigned or visibly claimed work', async () => {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async () => response([issue({ comments: 22, assignees: [{ login: 'other-dev' }] })]);
+  globalThis.fetch = async () => response([issue({ assignees: [{ login: 'other-dev' }] })]);
+  try {
+    const result = await scanOpportunities();
+    assert.equal(result.qualified, 0);
+    assert.equal(result.rejectionSummary['Already assigned'], 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('rejects grant applications owned by another applicant', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => response([issue({
+    title: 'Grant Application - Existing Privacy Network',
+    body: 'Applicant Information. Requested Grant Amount (USD): $50,000. Milestone funded. Covers 400 hours.',
+    repository_url: 'https://api.github.com/repos/example/community-grants',
+    labels: [{ name: 'Grant Application' }],
+    assignees: [],
+  })]);
+  try {
+    const result = await scanOpportunities();
+    assert.equal(result.qualified, 0);
+    assert.equal(result.rejectionSummary['Grant ownership record'], 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('rejects already awarded or in-progress projects', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => response([issue({
+    title: 'Build mobile combat system — reward $30,000 USD',
+    body: 'Acceptance criteria and funded milestone at https://algora.io/bounties/example. Milestone 1: Closed / Paid.',
+    labels: [{ name: 'Awarded' }],
+    assignees: [],
+  })]);
+  try {
+    const result = await scanOpportunities();
+    assert.equal(result.qualified, 0);
+    assert.equal(result.rejectionSummary['Already awarded or in progress'], 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('penalizes visible competition on otherwise actionable work', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => response([issue({ comments: 22 })]);
   try {
     const result = await scanOpportunities();
     assert.equal(result.qualified, 1);
     assert.equal(result.opportunities[0].competition, 'High');
-    assert.ok(result.opportunities[0].riskFlags.includes('Already has assignee'));
     assert.ok(result.opportunities[0].riskFlags.includes('High visible competition'));
   } finally {
     globalThis.fetch = originalFetch;
