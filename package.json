@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node --test scripts/scanner.test.mjs",
+    "scan:revenue": "node scripts/revenue-scan.mjs"
   },
   "dependencies": {
     "next": "14.2.35",
