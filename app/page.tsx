@@ -1,145 +1,246 @@
-import OrderBuilder from "./order-builder";
+'use client';
 
-const CubeMark = () => (
-  <svg aria-hidden="true" viewBox="0 0 32 32" className="brand-mark">
-    <path d="m16 2 12 7v14l-12 7L4 23V9l12-7Z" fill="currentColor" />
-    <path d="m16 2 12 7-12 7L4 9l12-7Z" fill="#ff8066" />
-    <path d="m16 16 12-7v14l-12 7V16Z" fill="#9c7cff" />
-    <path d="m16 16-12-7v14l12 7V16Z" fill="#66e7c4" />
-  </svg>
-);
+import { ChangeEvent, useEffect, useRef, useState } from 'react';
 
-const ArrowIcon = () => (
-  <svg aria-hidden="true" viewBox="0 0 20 20" className="arrow-icon">
-    <path d="M4 10h11m-4-4 4 4-4 4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
-  </svg>
-);
+type VoxelModel = {
+  size: number;
+  pixels: Uint8ClampedArray;
+  name: string;
+};
 
-const CheckIcon = () => (
-  <svg aria-hidden="true" viewBox="0 0 20 20" className="check-icon">
-    <path d="m5 10 3 3 7-7" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
-  </svg>
-);
+const CHECKOUT_URL = process.env.NEXT_PUBLIC_CHECKOUT_URL || '';
+const GRID = 28;
+
+function shade(v: number, amount: number) {
+  return Math.max(0, Math.min(255, Math.round(v * amount)));
+}
+
+function drawCube(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  s: number,
+  depth: number,
+  r: number,
+  g: number,
+  b: number,
+) {
+  const dx = s * 0.48;
+  const dy = s * 0.28;
+  const h = depth;
+  ctx.beginPath();
+  ctx.moveTo(x, y - h);
+  ctx.lineTo(x + dx, y - dy - h);
+  ctx.lineTo(x, y - 2 * dy - h);
+  ctx.lineTo(x - dx, y - dy - h);
+  ctx.closePath();
+  ctx.fillStyle = `rgb(${shade(r, 1.08)},${shade(g, 1.08)},${shade(b, 1.08)})`;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(x - dx, y - dy - h);
+  ctx.lineTo(x, y - 2 * dy - h);
+  ctx.lineTo(x, y - 2 * dy);
+  ctx.lineTo(x - dx, y - dy);
+  ctx.closePath();
+  ctx.fillStyle = `rgb(${shade(r, 0.72)},${shade(g, 0.72)},${shade(b, 0.72)})`;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(x + dx, y - dy - h);
+  ctx.lineTo(x, y - 2 * dy - h);
+  ctx.lineTo(x, y - 2 * dy);
+  ctx.lineTo(x + dx, y - dy);
+  ctx.closePath();
+  ctx.fillStyle = `rgb(${shade(r, 0.88)},${shade(g, 0.88)},${shade(b, 0.88)})`;
+  ctx.fill();
+}
+
+function renderModel(canvas: HTMLCanvasElement, model: VoxelModel) {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const width = canvas.clientWidth || 720;
+  const height = canvas.clientHeight || 620;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, width, height);
+
+  const gradient = ctx.createRadialGradient(width * 0.5, height * 0.43, 20, width * 0.5, height * 0.45, width * 0.52);
+  gradient.addColorStop(0, 'rgba(125,255,193,.15)');
+  gradient.addColorStop(1, 'rgba(5,8,7,0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+
+  const n = model.size;
+  const block = Math.min(width / (n * 0.95), height / (n * 0.55));
+  const originX = width / 2;
+  const originY = height * 0.76;
+
+  for (let row = 0; row < n; row++) {
+    for (let col = n - 1; col >= 0; col--) {
+      const i = (row * n + col) * 4;
+      const r = model.pixels[i];
+      const g = model.pixels[i + 1];
+      const b = model.pixels[i + 2];
+      const a = model.pixels[i + 3];
+      if (a < 28) continue;
+      const brightness = (r + g + b) / 765;
+      const depth = block * (0.7 + (1 - brightness) * 2.7);
+      const x = originX + (col - row) * block * 0.48;
+      const y = originY - (col + row) * block * 0.28;
+      drawCube(ctx, x, y, block, depth, r, g, b);
+    }
+  }
+}
+
+function cubeMesh(model: VoxelModel) {
+  const vertices: string[] = [];
+  const faces: string[] = [];
+  let vertexCount = 0;
+  const n = model.size;
+
+  const addCube = (x: number, y: number, z: number, h: number, r: number, g: number, b: number) => {
+    const base = vertexCount;
+    const pts = [
+      [x, y, z], [x + 1, y, z], [x + 1, y + 1, z], [x, y + 1, z],
+      [x, y, z + h], [x + 1, y, z + h], [x + 1, y + 1, z + h], [x, y + 1, z + h],
+    ];
+    for (const p of pts) vertices.push(`${p[0]} ${p[1]} ${p[2]} ${r} ${g} ${b}`);
+    const quads = [[0,1,2,3],[4,7,6,5],[0,4,5,1],[1,5,6,2],[2,6,7,3],[4,0,3,7]];
+    for (const q of quads) faces.push(`4 ${q.map(v => v + base).join(' ')}`);
+    vertexCount += 8;
+  };
+
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const i = (y * n + x) * 4;
+      const r = model.pixels[i];
+      const g = model.pixels[i + 1];
+      const b = model.pixels[i + 2];
+      const a = model.pixels[i + 3];
+      if (a < 28) continue;
+      const brightness = (r + g + b) / 765;
+      addCube(x - n / 2, n / 2 - y, 0, 0.8 + (1 - brightness) * 2.7, r, g, b);
+    }
+  }
+
+  const header = [
+    'ply', 'format ascii 1.0',
+    `element vertex ${vertices.length}`,
+    'property float x', 'property float y', 'property float z',
+    'property uchar red', 'property uchar green', 'property uchar blue',
+    `element face ${faces.length}`,
+    'property list uchar int vertex_indices', 'end_header',
+  ].join('\n');
+  return `${header}\n${vertices.join('\n')}\n${faces.join('\n')}\n`;
+}
 
 export default function Home() {
+  const [model, setModel] = useState<VoxelModel | null>(null);
+  const [status, setStatus] = useState('Upload one photo to start.');
+  const [paid, setPaid] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    setPaid(new URLSearchParams(window.location.search).get('paid') === '1');
+  }, []);
+
+  useEffect(() => {
+    if (!model || !canvasRef.current) return;
+    renderModel(canvasRef.current, model);
+    const redraw = () => canvasRef.current && renderModel(canvasRef.current, model);
+    window.addEventListener('resize', redraw);
+    return () => window.removeEventListener('resize', redraw);
+  }, [model]);
+
+  const loadPhoto = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setStatus('Please choose an image file.');
+      return;
+    }
+    setStatus('Building your voxel…');
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const temp = document.createElement('canvas');
+        temp.width = GRID;
+        temp.height = GRID;
+        const ctx = temp.getContext('2d', { willReadFrequently: true });
+        if (!ctx) return;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, GRID, GRID);
+        const scale = Math.max(GRID / img.width, GRID / img.height);
+        const w = img.width * scale;
+        const h = img.height * scale;
+        ctx.drawImage(img, (GRID - w) / 2, (GRID - h) / 2, w, h);
+        const data = ctx.getImageData(0, 0, GRID, GRID);
+        setModel({ size: GRID, pixels: data.data, name: file.name.replace(/\.[^.]+$/, '') || 'voxel' });
+        setStatus('Voxel ready. Preview it, then download the 3D model.');
+      };
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const download = () => {
+    if (!model) return;
+    if (!paid && CHECKOUT_URL) {
+      window.location.href = CHECKOUT_URL;
+      return;
+    }
+    const blob = new Blob([cubeMesh(model)], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `${model.name}-voxel.ply`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <main>
-      <header className="site-header">
-        <a className="brand" href="#top" aria-label="VoxelMe home">
-          <CubeMark />
-          <span>VoxelMe</span>
-        </a>
-        <div className="header-actions">
-          <span className="header-price"><strong>$15</strong> flat</span>
-          <a className="button button-small" href="#order">Make mine</a>
-        </div>
+      <header className="topbar">
+        <a className="logo" href="#top">VOXEL VAULT</a>
+        <span>ONE PHOTO → ONE VOXEL</span>
       </header>
 
       <section className="hero" id="top">
-        <div className="hero-copy">
-          <p className="eyebrow"><span className="status-dot" /> Custom-made in 24 hours</p>
-          <h1>Your favorite photo,<br /><em>reimagined in voxels.</em></h1>
-          <p className="hero-lede">
-            Send a photo of you, your pet, or your favorite duo. Get a one-of-one voxel portrait made for sharing, gifting, and keeping.
-          </p>
-          <div className="hero-actions">
-            <a className="button button-primary" href="#order">
-              Start my portrait — $15 <ArrowIcon />
-            </a>
-            <a className="text-link" href="#included">See what you get</a>
-          </div>
-          <div className="trust-row" aria-label="Offer details">
-            <span><CheckIcon /> No crypto</span>
-            <span><CheckIcon /> One revision</span>
-            <span><CheckIcon /> Two sizes</span>
-          </div>
+        <div className="copy">
+          <span className="kicker">INSTANT CUSTOM 3D VOXEL</span>
+          <h1>Turn your photo into a <em>downloadable voxel.</em></h1>
+          <p>Upload one image. We turn it into a colorful block-built 3D model you can download and open in Blender or other 3D software.</p>
+          <div className="priceLine"><strong>$9.99</strong><span>one model · one download · no subscription</span></div>
+          <label className="upload primary">
+            <input type="file" accept="image/*" onChange={loadPhoto} />
+            {model ? 'Choose another photo' : 'Upload photo →'}
+          </label>
+          <div className="trust"><span>✓ No crypto</span><span>✓ No account</span><span>✓ Real .PLY 3D file</span></div>
         </div>
 
-        <div className="hero-visual">
-          <div className="visual-glow" />
-          <figure className="portrait-card">
-            <img src="https://voxelme-15.voxel-vault-5748.chatgpt.site/voxelme-hero.webp" alt="A person and golden retriever recreated as detailed voxel art" />
-            <figcaption>
-              <span><i /> Made for you</span>
-              <strong>One of one</strong>
-            </figcaption>
-          </figure>
-          <div className="floating-tag tag-top">Person or pet</div>
-          <div className="floating-tag tag-bottom">Ready to share</div>
+        <div className="studio">
+          <div className="studioTop"><span>LIVE VOXEL PREVIEW</span><i>{model ? 'READY' : 'WAITING FOR PHOTO'}</i></div>
+          {model ? <canvas ref={canvasRef} className="preview" /> : <div className="emptyPreview"><div className="demoCube"><b/><b/><b/><b/><b/><b/><b/><b/><b/></div><p>Your voxel appears here.</p></div>}
+          <div className="studioBottom"><span>{status}</span><button disabled={!model} onClick={download}>{CHECKOUT_URL && !paid ? 'Buy & download — $9.99' : 'Download .PLY →'}</button></div>
         </div>
       </section>
 
-      <section className="proof-strip" aria-label="Simple order process">
-        <p>One photo</p><span>→</span><p>One quick brief</p><span>→</span><p>One custom portrait</p>
+      <section className="proof">
+        <article><b>01</b><h2>Upload</h2><p>Pick a face, pet, product, character, logo, or object.</p></article>
+        <article><b>02</b><h2>Voxelize</h2><p>The image is sampled into hundreds of colored 3D blocks with depth.</p></article>
+        <article><b>03</b><h2>Download</h2><p>Save one real polygonal .PLY voxel model to your device.</p></article>
       </section>
 
-      <section className="included-preview" id="included">
-        <div>
-          <p className="section-kicker">The complete mini pack</p>
-          <h2>One small price.<br />A genuinely personal result.</h2>
-        </div>
-        <ul className="included-list">
-          <li><span>01</span><div><strong>Custom portrait</strong><small>Built around your photo and vibe</small></div></li>
-          <li><span>02</span><div><strong>Two useful sizes</strong><small>Square post + phone wallpaper</small></div></li>
-          <li><span>03</span><div><strong>One revision</strong><small>A small tweak, included</small></div></li>
-        </ul>
+      <section className="bottomCta">
+        <div><span className="kicker">THAT'S THE WHOLE PRODUCT</span><h2>One amazing voxel. Nothing complicated.</h2></div>
+        <label className="upload secondary"><input type="file" accept="image/*" onChange={loadPhoto} />Make my voxel — $9.99</label>
       </section>
 
-      <section className="process-section">
-        <div className="section-heading">
-          <p className="section-kicker">How it works</p>
-          <h2>From camera roll<br />to custom art.</h2>
-        </div>
-        <div className="process-grid">
-          <article><span>01</span><h3>Tell us the vibe</h3><p>Choose a subject, a mood, and add any details that make the portrait feel like yours.</p></article>
-          <article><span>02</span><h3>Send your photos</h3><p>Your email app opens with the brief ready. Attach one to three clear photos and press send.</p></article>
-          <article><span>03</span><h3>Approve your portrait</h3><p>We confirm the brief and payment, then send your finished files within 24 hours.</p></article>
-        </div>
-      </section>
-
-      <section className="order-section" id="order">
-        <div className="order-intro">
-          <p className="section-kicker">Make yours</p>
-          <h2>Build your $15 portrait brief.</h2>
-          <p>It takes about a minute. Your email app opens at the end so you can attach the photos.</p>
-          <div className="promise-card">
-            <span>Exactly what is included</span>
-            <ul>
-              <li><CheckIcon /> One custom portrait</li>
-              <li><CheckIcon /> Square + wallpaper files</li>
-              <li><CheckIcon /> One small revision</li>
-              <li><CheckIcon /> Personal-use rights</li>
-            </ul>
-          </div>
-        </div>
-        <OrderBuilder />
-      </section>
-
-      <section className="faq-section">
-        <div>
-          <p className="section-kicker">Good to know</p>
-          <h2>Questions,<br />answered plainly.</h2>
-        </div>
-        <div className="faq-list">
-          <details open><summary>Do I need crypto or an NFT wallet?<span>+</span></summary><p>No. This is a normal custom digital-art order. No crypto, wallet, or technical setup is involved.</p></details>
-          <details><summary>What photos work best?<span>+</span></summary><p>Send one to three clear, well-lit photos where the face or pet is easy to see. Different angles help, but are not required.</p></details>
-          <details><summary>What does “one revision” cover?<span>+</span></summary><p>One small change such as a color, background detail, or expression tweak. A completely new subject or concept would be a new order.</p></details>
-          <details><summary>How will I receive the files?<span>+</span></summary><p>We email a high-resolution square image and a phone-friendly wallpaper file within 24 hours after your brief and payment are confirmed.</p></details>
-        </div>
-      </section>
-
-      <section className="closing-cta">
-        <CubeMark />
-        <p>One photo. One day. One of one.</p>
-        <h2>Your next favorite portrait is $15 away.</h2>
-        <a className="button button-primary" href="#order">Make mine <ArrowIcon /></a>
-      </section>
-
-      <footer>
-        <a className="brand" href="#top"><CubeMark /><span>VoxelMe</span></a>
-        <p>Custom voxel portraits, made personally.</p>
-        <a href="mailto:hartensteindominic@gmail.com">Questions? Email Dominic</a>
-      </footer>
+      <footer><b>VOXEL VAULT</b><span>Instant custom voxel models.</span></footer>
     </main>
   );
 }
