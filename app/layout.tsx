@@ -2,17 +2,17 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Voxel Creator Pack — 30 Commercial-Use Assets for $9.99',
-  description: 'Download 30 colorful voxel SVG assets for social graphics, websites, game mockups, streams, stickers, and client work. Commercial use included.',
+  title: 'Voxel Vault - Custom 3D Voxel Asset Pack Generator',
+  description: 'Turn one theme or reference image into a coordinated pack of 13 downloadable 3D voxel assets for $9.99.',
   openGraph: {
-    title: '30 Voxel Assets. $9.99. Commercial Use Included.',
-    description: 'A ready-to-use creator pack with 30 scalable SVG voxel assets and a commercial-use license.',
+    title: 'One Idea. 13 Matching 3D Voxel Assets. $9.99.',
+    description: 'Generate a custom voxel character, props, loot, environment pieces, and landmarks, then download the full 3D pack.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Voxel Creator Pack — 30 Assets for $9.99',
-    description: '30 scalable voxel SVG assets with commercial use included.',
+    title: 'Custom 3D Voxel Asset Pack - $9.99',
+    description: 'One theme in. Thirteen matching downloadable 3D voxel assets out.',
   },
 };
 
