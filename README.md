@@ -1,22 +1,21 @@
-# VoxelMe
+# Voxel Creator Pack
 
-A focused $15 custom-portrait storefront: one clear offer, one guided brief, and one direct path from a Facebook ad to an order email.
+A direct-response digital product built for paid social traffic: 30 original voxel-style SVG assets for $9.99 with commercial-use rights in finished projects.
 
-## Live site
+## Product
 
-https://voxelme-15.voxel-vault-5748.chatgpt.site
+- 30 separate scalable SVG assets
+- Transparent backgrounds
+- Recolorable and editable vector files
+- Commercial use in finished work and client projects
+- README + license included in the generated ZIP
+- No subscription or crypto
 
-## Offer
+## Sales flow
 
-- One custom voxel portrait of a person, pet, or pair
-- Square social image and phone wallpaper
-- One small revision
-- Delivery within 24 hours after the brief and payment are confirmed
-- $15 total, with no crypto or subscription
+The landing page previews all 30 assets and uses one repeated purchase CTA. When `NEXT_PUBLIC_CHECKOUT_URL` is configured, unpaid visitors are sent to checkout. A successful checkout should return to the storefront with `?paid=1`; the page then builds the complete ZIP in the browser and downloads it immediately.
 
-## Order flow
-
-The customer chooses a subject and visual mood, adds their email and notes, then opens a prefilled email to attach 1–3 reference photos. The seller confirms the brief and replies with a secure payment link before beginning the portrait.
+Without a checkout URL, the CTA opens a prefilled purchase email so the offer still has a working fallback.
 
 ## Run locally
 
@@ -24,5 +23,3 @@ The customer chooses a subject and visual mood, adds their email and notes, then
 npm install
 npm run dev
 ```
-
-The customer-facing source lives in `app/`. The original artwork is served from the deployed VoxelMe site so the GitHub project stays lightweight.
