@@ -15,8 +15,8 @@ export async function POST(request: Request) {
   body.set('line_items[0][quantity]', '1');
   body.set('line_items[0][price_data][currency]', 'usd');
   body.set('line_items[0][price_data][unit_amount]', '999');
-  body.set('line_items[0][price_data][product_data][name]', 'Custom 3D Voxel Asset Pack');
-  body.set('line_items[0][price_data][product_data][description]', 'A custom pack of 13 coordinated colored 3D voxel models delivered as separate PLY files in one ZIP.');
+  body.set('line_items[0][price_data][product_data][name]', 'Voxel Max-Ready 3D Voxel Asset Pack');
+  body.set('line_items[0][price_data][product_data][description]', '13 coordinated voxel assets delivered in editable VOX plus self-contained GLTF formats in one ZIP.');
   body.set('metadata[product]', 'voxel_3d_asset_pack');
   body.set('payment_intent_data[metadata][product]', 'voxel_3d_asset_pack');
 

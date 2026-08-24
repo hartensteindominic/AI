@@ -2,17 +2,17 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Voxel Vault - Custom 3D Voxel Asset Pack Generator',
-  description: 'Turn one theme or reference image into a coordinated pack of 13 downloadable 3D voxel assets for $9.99.',
+  title: 'Voxel Vault - Voxel Max-Ready 3D Asset Pack Generator',
+  description: 'Turn one theme or reference image into 13 matching downloadable voxel assets in VOX and GLTF formats for $9.99.',
   openGraph: {
-    title: 'One Idea. 13 Matching 3D Voxel Assets. $9.99.',
-    description: 'Generate a custom voxel character, props, loot, environment pieces, and landmarks, then download the full 3D pack.',
+    title: 'One Idea. 13 Voxel Max-Ready 3D Assets. $9.99.',
+    description: 'Generate a matching voxel character, props, loot, environment pieces, and landmarks with VOX and GLTF downloads.',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Custom 3D Voxel Asset Pack - $9.99',
-    description: 'One theme in. Thirteen matching downloadable 3D voxel assets out.',
+    title: 'Voxel Max-Ready 3D Voxel Asset Pack - $9.99',
+    description: 'One theme in. Thirteen matching VOX + GLTF assets out.',
   },
 };
 
