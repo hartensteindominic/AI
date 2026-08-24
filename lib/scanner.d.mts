@@ -25,6 +25,7 @@ export type ScanResult = {
   scanned: number;
   qualified: number;
   authenticated: boolean;
+  rejectionSummary: Record<string, number>;
   methodology: string;
 };
 
