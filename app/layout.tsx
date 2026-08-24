@@ -1,8 +1,8 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'GhostForge — Revenue Cockpit',
-  description: 'Find, rank, build and track high-value development opportunities.',
+  title: 'Voxel Vault — Turn Any Photo Into a 3D Voxel',
+  description: 'Upload one photo and generate a downloadable custom voxel model.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
