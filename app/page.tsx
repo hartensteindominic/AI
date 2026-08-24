@@ -2,285 +2,49 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-const CHECKOUT_URL = process.env.NEXT_PUBLIC_CHECKOUT_URL || '';
 const PRICE = '$9.99';
 
-type Asset = {
-  name: string;
-  seed: number;
-  colors: [string, string, string];
-};
+type Asset = { name: string; seed: number; colors: [string, string, string] };
 
 const assets: Asset[] = [
-  ['Pulse', 11, ['#78f7b5', '#22c55e', '#d1fae5']],
-  ['Nova', 17, ['#fbbf24', '#f97316', '#fef3c7']],
-  ['Orbit', 23, ['#60a5fa', '#2563eb', '#dbeafe']],
-  ['Prism', 29, ['#c084fc', '#7c3aed', '#ede9fe']],
-  ['Bloom', 31, ['#fb7185', '#db2777', '#fce7f3']],
-  ['Spark', 37, ['#fde047', '#ca8a04', '#fef9c3']],
-  ['Drift', 41, ['#67e8f9', '#0891b2', '#cffafe']],
-  ['Arc', 43, ['#a78bfa', '#6d28d9', '#ddd6fe']],
-  ['Rift', 47, ['#f87171', '#dc2626', '#fee2e2']],
-  ['Flux', 53, ['#34d399', '#059669', '#d1fae5']],
-  ['Echo', 59, ['#93c5fd', '#1d4ed8', '#dbeafe']],
-  ['Halo', 61, ['#fcd34d', '#d97706', '#fef3c7']],
-  ['Pixel', 67, ['#f0abfc', '#a21caf', '#fae8ff']],
-  ['Wave', 71, ['#22d3ee', '#0e7490', '#cffafe']],
-  ['Beam', 73, ['#86efac', '#16a34a', '#dcfce7']],
-  ['Loop', 79, ['#fda4af', '#e11d48', '#ffe4e6']],
-  ['Core', 83, ['#fb923c', '#c2410c', '#ffedd5']],
-  ['Mint', 89, ['#5eead4', '#0f766e', '#ccfbf1']],
-  ['Ember', 97, ['#f97316', '#b91c1c', '#ffedd5']],
-  ['Frost', 101, ['#bae6fd', '#0284c7', '#e0f2fe']],
-  ['Volt', 103, ['#bef264', '#65a30d', '#ecfccb']],
-  ['Rune', 107, ['#d8b4fe', '#7e22ce', '#f3e8ff']],
-  ['Glitch', 109, ['#f472b6', '#be185d', '#fce7f3']],
-  ['Comet', 113, ['#fdba74', '#ea580c', '#ffedd5']],
-  ['Aura', 127, ['#99f6e4', '#0f766e', '#ccfbf1']],
-  ['Node', 131, ['#c4b5fd', '#5b21b6', '#ede9fe']],
-  ['Dash', 137, ['#7dd3fc', '#0369a1', '#e0f2fe']],
-  ['Byte', 139, ['#a3e635', '#4d7c0f', '#ecfccb']],
-  ['Portal', 149, ['#e879f9', '#a21caf', '#fae8ff']],
-  ['Crown', 151, ['#facc15', '#a16207', '#fef9c3']],
-].map(([name, seed, colors]) => ({ name: name as string, seed: seed as number, colors: colors as [string, string, string] }));
+  ['Pulse',11,['#78f7b5','#22c55e','#d1fae5']],['Nova',17,['#fbbf24','#f97316','#fef3c7']],['Orbit',23,['#60a5fa','#2563eb','#dbeafe']],['Prism',29,['#c084fc','#7c3aed','#ede9fe']],['Bloom',31,['#fb7185','#db2777','#fce7f3']],['Spark',37,['#fde047','#ca8a04','#fef9c3']],['Drift',41,['#67e8f9','#0891b2','#cffafe']],['Arc',43,['#a78bfa','#6d28d9','#ddd6fe']],['Rift',47,['#f87171','#dc2626','#fee2e2']],['Flux',53,['#34d399','#059669','#d1fae5']],['Echo',59,['#93c5fd','#1d4ed8','#dbeafe']],['Halo',61,['#fcd34d','#d97706','#fef3c7']],['Pixel',67,['#f0abfc','#a21caf','#fae8ff']],['Wave',71,['#22d3ee','#0e7490','#cffafe']],['Beam',73,['#86efac','#16a34a','#dcfce7']],['Loop',79,['#fda4af','#e11d48','#ffe4e6']],['Core',83,['#fb923c','#c2410c','#ffedd5']],['Mint',89,['#5eead4','#0f766e','#ccfbf1']],['Ember',97,['#f97316','#b91c1c','#ffedd5']],['Frost',101,['#bae6fd','#0284c7','#e0f2fe']],['Volt',103,['#bef264','#65a30d','#ecfccb']],['Rune',107,['#d8b4fe','#7e22ce','#f3e8ff']],['Glitch',109,['#f472b6','#be185d','#fce7f3']],['Comet',113,['#fdba74','#ea580c','#ffedd5']],['Aura',127,['#99f6e4','#0f766e','#ccfbf1']],['Node',131,['#c4b5fd','#5b21b6','#ede9fe']],['Dash',137,['#7dd3fc','#0369a1','#e0f2fe']],['Byte',139,['#a3e635','#4d7c0f','#ecfccb']],['Portal',149,['#e879f9','#a21caf','#fae8ff']],['Crown',151,['#facc15','#a16207','#fef9c3']],
+].map(([name,seed,colors]) => ({ name: name as string, seed: seed as number, colors: colors as [string,string,string] }));
 
-function hashStep(value: number) {
-  return (value * 1664525 + 1013904223) >>> 0;
-}
+function hashStep(value:number){return(value*1664525+1013904223)>>>0}
+function cellsFor(seed:number){const cells:Array<[number,number,number]>=[];let s=seed;for(let y=0;y<5;y++){for(let x=0;x<5;x++){s=hashStep(s);const edge=x===2||y===2;if((s%100)>(edge?34:54))cells.push([x,y,(s%3)+1])}}cells.push([2,2,3]);return cells}
+function shade(hex:string,amount:number){const n=Number.parseInt(hex.replace('#',''),16);const r=Math.max(0,Math.min(255,Math.round(((n>>16)&255)*amount)));const g=Math.max(0,Math.min(255,Math.round(((n>>8)&255)*amount)));const b=Math.max(0,Math.min(255,Math.round((n&255)*amount)));return`rgb(${r},${g},${b})`}
 
-function cellsFor(seed: number) {
-  const cells: Array<[number, number, number]> = [];
-  let s = seed;
-  for (let y = 0; y < 5; y++) {
-    for (let x = 0; x < 5; x++) {
-      s = hashStep(s);
-      const edge = x === 2 || y === 2;
-      if ((s % 100) > (edge ? 34 : 54)) cells.push([x, y, (s % 3) + 1]);
-    }
-  }
-  cells.push([2, 2, 3]);
-  return cells;
-}
+function assetSvg(asset:Asset){const size=22,ox=128,oy=155;const cubes=cellsFor(asset.seed).map(([x,y,h],index)=>{const px=ox+(x-y)*size*.58;const py=oy+(x+y-4)*size*.29-h*7;const top=index%4===0?asset.colors[2]:asset.colors[0];const left=shade(asset.colors[1],.8);const right=shade(asset.colors[0],.88);const dx=size*.58,dy=size*.29,depth=12+h*4;return`<g><polygon points="${px},${py-depth} ${px+dx},${py-dy-depth} ${px},${py-2*dy-depth} ${px-dx},${py-dy-depth}" fill="${top}"/><polygon points="${px-dx},${py-dy-depth} ${px},${py-2*dy-depth} ${px},${py-2*dy} ${px-dx},${py-dy}" fill="${left}"/><polygon points="${px+dx},${py-dy-depth} ${px},${py-2*dy-depth} ${px},${py-2*dy} ${px+dx},${py-dy}" fill="${right}"/></g>`}).join('');return`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="1024" height="1024">${cubes}</svg>`}
 
-function shade(hex: string, amount: number) {
-  const raw = hex.replace('#', '');
-  const n = Number.parseInt(raw, 16);
-  const r = Math.max(0, Math.min(255, Math.round(((n >> 16) & 255) * amount)));
-  const g = Math.max(0, Math.min(255, Math.round(((n >> 8) & 255) * amount)));
-  const b = Math.max(0, Math.min(255, Math.round((n & 255) * amount)));
-  return `rgb(${r},${g},${b})`;
-}
+function PreviewAsset({asset}:{asset:Asset}){const svg=useMemo(()=>assetSvg(asset),[asset]);const data=`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;return <article className="assetCard"><div className="assetArt" style={{backgroundImage:`url("${data}")`}}/><span>{asset.name}</span></article>}
 
-function assetSvg(asset: Asset) {
-  const cells = cellsFor(asset.seed);
-  const size = 22;
-  const ox = 128;
-  const oy = 155;
-  const cubes = cells.map(([x, y, h], index) => {
-    const px = ox + (x - y) * size * 0.58;
-    const py = oy + (x + y - 4) * size * 0.29 - h * 7;
-    const top = index % 4 === 0 ? asset.colors[2] : asset.colors[0];
-    const left = shade(asset.colors[1], 0.8);
-    const right = shade(asset.colors[0], 0.88);
-    const dx = size * 0.58;
-    const dy = size * 0.29;
-    const depth = 12 + h * 4;
-    return `<g><polygon points="${px},${py - depth} ${px + dx},${py - dy - depth} ${px},${py - 2 * dy - depth} ${px - dx},${py - dy - depth}" fill="${top}"/><polygon points="${px - dx},${py - dy - depth} ${px},${py - 2 * dy - depth} ${px},${py - 2 * dy} ${px - dx},${py - dy}" fill="${left}"/><polygon points="${px + dx},${py - dy - depth} ${px},${py - 2 * dy - depth} ${px},${py - 2 * dy} ${px + dx},${py - dy}" fill="${right}"/></g>`;
-  }).join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="1024" height="1024">${cubes}</svg>`;
-}
+const crcTable=(()=>{const table=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?0xedb88320^(c>>>1):c>>>1;table[n]=c>>>0}return table})();
+function crc32(data:Uint8Array){let c=0xffffffff;for(const byte of data)c=crcTable[(c^byte)&0xff]^(c>>>8);return(c^0xffffffff)>>>0}
+function concat(parts:Uint8Array[]){const size=parts.reduce((sum,part)=>sum+part.length,0);const out=new Uint8Array(size);let offset=0;for(const part of parts){out.set(part,offset);offset+=part.length}return out}
+function header32(...values:number[]){const out=new Uint8Array(values.length*4);const view=new DataView(out.buffer);values.forEach((value,i)=>view.setUint32(i*4,value>>>0,true));return out}
+function header16(...values:number[]){const out=new Uint8Array(values.length*2);const view=new DataView(out.buffer);values.forEach((value,i)=>view.setUint16(i*2,value&0xffff,true));return out}
+function buildZip(files:Array<{name:string;content:string}>){const encoder=new TextEncoder();const local:Uint8Array[]=[];const central:Uint8Array[]=[];let offset=0;for(const file of files){const name=encoder.encode(file.name);const data=encoder.encode(file.content);const crc=crc32(data);const localHeader=concat([header32(0x04034b50),header16(20,0,0,0,0),header32(crc,data.length,data.length),header16(name.length,0),name]);local.push(localHeader,data);const centralHeader=concat([header32(0x02014b50),header16(20,20,0,0,0,0),header32(crc,data.length,data.length),header16(name.length,0,0,0,0),header32(0,offset),name]);central.push(centralHeader);offset+=localHeader.length+data.length}const localBytes=concat(local);const centralBytes=concat(central);const end=concat([header32(0x06054b50),header16(0,0,files.length,files.length),header32(centralBytes.length,localBytes.length),header16(0)]);return concat([localBytes,centralBytes,end])}
+function createPack(){const files=assets.map((asset,index)=>({name:`voxel-creator-pack/${String(index+1).padStart(2,'0')}-${asset.name.toLowerCase()}.svg`,content:assetSvg(asset)}));files.push({name:'voxel-creator-pack/LICENSE.txt',content:'Voxel Creator Pack Commercial License\n\nYou may use and modify these assets in personal and commercial finished projects, including client work. You may not resell, redistribute, sublicense, share, or make the raw/source asset files available as a competing asset pack or standalone download.\n'});files.push({name:'voxel-creator-pack/README.txt',content:'VOXEL CREATOR PACK\n\n30 original SVG voxel symbols. Vector, recolorable, scalable, and ready for social posts, thumbnails, websites, game mockups, stream graphics, presentations, stickers, and client projects.\n\nFormat: SVG\nCanvas: 1024x1024\nBackground: transparent\nLicense: commercial use included\n'});return buildZip(files)}
 
-function PreviewAsset({ asset }: { asset: Asset }) {
-  const svg = useMemo(() => assetSvg(asset), [asset]);
-  const data = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-  return (
-    <article className="assetCard">
-      <div className="assetArt" style={{ backgroundImage: `url("${data}")` }} />
-      <span>{asset.name}</span>
-    </article>
-  );
-}
+export default function Home(){
+  const[paid,setPaid]=useState(false);const[checkoutBusy,setCheckoutBusy]=useState(false);const[verifyBusy,setVerifyBusy]=useState(false);const[downloading,setDownloading]=useState(false);
+  useEffect(()=>{const sessionId=new URLSearchParams(window.location.search).get('session_id');if(!sessionId)return;setVerifyBusy(true);fetch(`/api/verify?session_id=${encodeURIComponent(sessionId)}`,{cache:'no-store'}).then(r=>r.json()).then(data=>setPaid(data?.paid===true)).catch(()=>setPaid(false)).finally(()=>setVerifyBusy(false))},[]);
 
-const crcTable = (() => {
-  const table = new Uint32Array(256);
-  for (let n = 0; n < 256; n++) {
-    let c = n;
-    for (let k = 0; k < 8; k++) c = (c & 1) ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    table[n] = c >>> 0;
-  }
-  return table;
-})();
+  function downloadPack(){setDownloading(true);const bytes=createPack();const blob=new Blob([bytes],{type:'application/zip'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='voxel-creator-pack.zip';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setDownloading(false)}
+  async function buyOrDownload(){if(paid){downloadPack();return}setCheckoutBusy(true);try{const response=await fetch('/api/checkout',{method:'POST'});const data=await response.json();if(response.ok&&data?.url){window.location.href=data.url;return}throw new Error('checkout unavailable')}catch{window.location.href=`mailto:hartensteindominic@gmail.com?subject=${encodeURIComponent('Buy Voxel Creator Pack — $9.99')}&body=${encodeURIComponent('Hi Dominic,\n\nI want the $9.99 Voxel Creator Pack with 30 SVG assets and the commercial-use license. Please send me the payment link.\n')}`}finally{setCheckoutBusy(false)}}
+  const buttonText=verifyBusy?'Verifying payment…':paid?(downloading?'Building your ZIP…':'Download the full pack →'):(checkoutBusy?'Opening checkout…':`Get all 30 — ${PRICE}`);
 
-function crc32(data: Uint8Array) {
-  let c = 0xffffffff;
-  for (const byte of data) c = crcTable[(c ^ byte) & 0xff] ^ (c >>> 8);
-  return (c ^ 0xffffffff) >>> 0;
-}
-
-function concat(parts: Uint8Array[]) {
-  const size = parts.reduce((sum, part) => sum + part.length, 0);
-  const out = new Uint8Array(size);
-  let offset = 0;
-  for (const part of parts) {
-    out.set(part, offset);
-    offset += part.length;
-  }
-  return out;
-}
-
-function header32(...values: number[]) {
-  const out = new Uint8Array(values.length * 4);
-  const view = new DataView(out.buffer);
-  values.forEach((value, i) => view.setUint32(i * 4, value >>> 0, true));
-  return out;
-}
-
-function header16(...values: number[]) {
-  const out = new Uint8Array(values.length * 2);
-  const view = new DataView(out.buffer);
-  values.forEach((value, i) => view.setUint16(i * 2, value & 0xffff, true));
-  return out;
-}
-
-function buildZip(files: Array<{ name: string; content: string }>) {
-  const encoder = new TextEncoder();
-  const local: Uint8Array[] = [];
-  const central: Uint8Array[] = [];
-  let offset = 0;
-
-  for (const file of files) {
-    const name = encoder.encode(file.name);
-    const data = encoder.encode(file.content);
-    const crc = crc32(data);
-    const localHeader = concat([
-      header32(0x04034b50), header16(20, 0, 0, 0, 0), header32(crc, data.length, data.length), header16(name.length, 0), name,
-    ]);
-    local.push(localHeader, data);
-
-    const centralHeader = concat([
-      header32(0x02014b50), header16(20, 20, 0, 0, 0, 0), header32(crc, data.length, data.length),
-      header16(name.length, 0, 0, 0, 0), header32(0, offset), name,
-    ]);
-    central.push(centralHeader);
-    offset += localHeader.length + data.length;
-  }
-
-  const localBytes = concat(local);
-  const centralBytes = concat(central);
-  const end = concat([
-    header32(0x06054b50), header16(0, 0, files.length, files.length), header32(centralBytes.length, localBytes.length), header16(0),
-  ]);
-  return concat([localBytes, centralBytes, end]);
-}
-
-function createPack() {
-  const files = assets.map((asset, index) => ({
-    name: `voxel-creator-pack/${String(index + 1).padStart(2, '0')}-${asset.name.toLowerCase()}.svg`,
-    content: assetSvg(asset),
-  }));
-  files.push({
-    name: 'voxel-creator-pack/LICENSE.txt',
-    content: 'Voxel Creator Pack Commercial License\n\nYou may use and modify these assets in personal and commercial finished projects, including client work. You may not resell, redistribute, sublicense, share, or make the raw/source asset files available as a competing asset pack or standalone download.\n',
-  });
-  files.push({
-    name: 'voxel-creator-pack/README.txt',
-    content: 'VOXEL CREATOR PACK\n\n30 original SVG voxel symbols. Vector, recolorable, scalable, and ready for social posts, thumbnails, websites, game mockups, stream graphics, presentations, stickers, and client projects.\n\nFormat: SVG\nCanvas: 1024x1024\nBackground: transparent\nLicense: commercial use included\n',
-  });
-  return buildZip(files);
-}
-
-export default function Home() {
-  const [paid, setPaid] = useState(false);
-  const [downloading, setDownloading] = useState(false);
-
-  useEffect(() => {
-    setPaid(new URLSearchParams(window.location.search).get('paid') === '1');
-  }, []);
-
-  function buyOrDownload() {
-    if (!paid) {
-      if (CHECKOUT_URL) {
-        window.location.href = CHECKOUT_URL;
-      } else {
-        window.location.href = `mailto:hartensteindominic@gmail.com?subject=${encodeURIComponent('Buy Voxel Creator Pack — $9.99')}&body=${encodeURIComponent('Hi Dominic,\n\nI want the $9.99 Voxel Creator Pack with 30 SVG assets and the commercial-use license. Please send me the payment link.\n')}`;
-      }
-      return;
-    }
-
-    setDownloading(true);
-    const bytes = createPack();
-    const blob = new Blob([bytes], { type: 'application/zip' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'voxel-creator-pack.zip';
-    a.click();
-    URL.revokeObjectURL(url);
-    setDownloading(false);
-  }
-
-  const buttonText = paid ? (downloading ? 'Building your ZIP…' : 'Download the full pack →') : `Get all 30 — ${PRICE}`;
-
-  return (
-    <main>
-      <header className="topbar">
-        <a className="logo" href="#top">VOXEL VAULT</a>
-        <span>30 ASSETS · COMMERCIAL USE · ONE DOWNLOAD</span>
-      </header>
-
-      <section className="hero" id="top">
-        <div className="copy">
-          <span className="kicker">THE VOXEL CREATOR PACK</span>
-          <h1>30 bold voxel assets for <em>$9.99.</em></h1>
-          <p>A ready-to-use collection of colorful voxel symbols for social posts, thumbnails, websites, game mockups, stickers, streams, and client work.</p>
-          <div className="priceLine"><strong>$9.99</strong><span>30 SVG files · commercial-use license · no subscription</span></div>
-          <button className="primary buyButton" onClick={buyOrDownload}>{buttonText}</button>
-          <div className="trust"><span>✓ Instant ZIP</span><span>✓ Transparent SVG</span><span>✓ Commercial use</span><span>✓ Recolor & resize</span></div>
-        </div>
-
-        <div className="packPanel">
-          <div className="panelTop"><span>FULL PACK PREVIEW</span><i>30 / 30 INCLUDED</i></div>
-          <div className="assetGrid heroGrid">
-            {assets.slice(0, 12).map((asset) => <PreviewAsset key={asset.name} asset={asset} />)}
-          </div>
-          <div className="panelBottom"><span>SVG · 1024×1024 · transparent background</span><button onClick={buyOrDownload}>{buttonText}</button></div>
-        </div>
-      </section>
-
-      <section className="valueStrip">
-        <div><strong>30</strong><span>original voxel assets</span></div>
-        <div><strong>1</strong><span>commercial-use license</span></div>
-        <div><strong>∞</strong><span>recolors & resizes</span></div>
-        <div><strong>$9.99</strong><span>one-time price</span></div>
-      </section>
-
-      <section className="showcase">
-        <div className="sectionHead">
-          <span className="kicker">EVERYTHING INCLUDED</span>
-          <h2>One pack. Thirty pieces.<br/>Ready to drop into your work.</h2>
-        </div>
-        <div className="assetGrid fullGrid">
-          {assets.map((asset) => <PreviewAsset key={asset.name} asset={asset} />)}
-        </div>
-      </section>
-
-      <section className="proof">
-        <article><b>01</b><h2>Buy once</h2><p>No subscription, credits, crypto, or account maze. One low-cost digital product.</p></article>
-        <article><b>02</b><h2>Download the ZIP</h2><p>Get 30 separate SVG files plus the README and commercial-use license.</p></article>
-        <article><b>03</b><h2>Use them anywhere</h2><p>Recolor, resize, remix, and use them in personal or commercial finished projects.</p></article>
-      </section>
-
-      <section className="licenseBox">
-        <div><span className="kicker">COMMERCIAL USE INCLUDED</span><h2>Use the pack in work you sell.</h2><p>Client projects, websites, thumbnails, social graphics, game concepts, stream graphics, stickers, presentations, and more are allowed. You just can’t resell or redistribute the raw pack itself.</p></div>
-        <button className="secondary buyButton" onClick={buyOrDownload}>{buttonText}</button>
-      </section>
-
-      <section className="bottomCta">
-        <div><span className="kicker">MADE FOR IMPULSE-BUY CREATIVE WORK</span><h2>Thirty useful assets for less than ten bucks.</h2></div>
-        <button className="secondary buyButton" onClick={buyOrDownload}>{buttonText}</button>
-      </section>
-
-      <footer><b>VOXEL VAULT</b><span>Digital voxel assets for creators.</span></footer>
-    </main>
-  );
+  return <main>
+    <header className="topbar"><a className="logo" href="#top">VOXEL VAULT</a><span>30 ASSETS · COMMERCIAL USE · ONE DOWNLOAD</span></header>
+    <section className="hero" id="top">
+      <div className="copy"><span className="kicker">THE VOXEL CREATOR PACK</span><h1>30 bold voxel assets for <em>$9.99.</em></h1><p>A ready-to-use collection of colorful voxel symbols for social posts, thumbnails, websites, game mockups, stickers, streams, and client work.</p><div className="priceLine"><strong>$9.99</strong><span>30 SVG files · commercial-use license · no subscription</span></div><button className="primary buyButton" disabled={checkoutBusy||verifyBusy||downloading} onClick={buyOrDownload}>{buttonText}</button><div className="trust"><span>✓ Instant ZIP</span><span>✓ Transparent SVG</span><span>✓ Commercial use</span><span>✓ Recolor & resize</span></div></div>
+      <div className="packPanel"><div className="panelTop"><span>FULL PACK PREVIEW</span><i>30 / 30 INCLUDED</i></div><div className="assetGrid heroGrid">{assets.slice(0,12).map(asset=><PreviewAsset key={asset.name} asset={asset}/>)}</div><div className="panelBottom"><span>SVG · 1024×1024 · transparent background</span><button disabled={checkoutBusy||verifyBusy||downloading} onClick={buyOrDownload}>{buttonText}</button></div></div>
+    </section>
+    <section className="valueStrip"><div><strong>30</strong><span>original voxel assets</span></div><div><strong>1</strong><span>commercial-use license</span></div><div><strong>∞</strong><span>recolors & resizes</span></div><div><strong>$9.99</strong><span>one-time price</span></div></section>
+    <section className="showcase"><div className="sectionHead"><div><span className="kicker">EVERYTHING INCLUDED</span><h2>One pack. Thirty pieces.<br/>Ready to drop into your work.</h2></div></div><div className="assetGrid fullGrid">{assets.map(asset=><PreviewAsset key={asset.name} asset={asset}/>)}</div></section>
+    <section className="proof"><article><b>01</b><h2>Buy once</h2><p>No subscription, credits, crypto, or account maze. One low-cost digital product.</p></article><article><b>02</b><h2>Download the ZIP</h2><p>Get 30 separate SVG files plus the README and commercial-use license.</p></article><article><b>03</b><h2>Use them anywhere</h2><p>Recolor, resize, remix, and use them in personal or commercial finished projects.</p></article></section>
+    <section className="licenseBox"><div><span className="kicker">COMMERCIAL USE INCLUDED</span><h2>Use the pack in work you sell.</h2><p>Client projects, websites, thumbnails, social graphics, game concepts, stream graphics, stickers, presentations, and more are allowed. You just can’t resell or redistribute the raw pack itself.</p></div><button className="secondary buyButton" disabled={checkoutBusy||verifyBusy||downloading} onClick={buyOrDownload}>{buttonText}</button></section>
+    <section className="bottomCta"><div><span className="kicker">BUILT FOR QUICK CREATIVE WORK</span><h2>Thirty useful assets for less than ten bucks.</h2></div><button className="secondary buyButton" disabled={checkoutBusy||verifyBusy||downloading} onClick={buyOrDownload}>{buttonText}</button></section>
+    <footer><b>VOXEL VAULT</b><span>Digital voxel assets for creators.</span></footer>
+  </main>
 }
