@@ -12,7 +12,7 @@ A listing is not income. GhostForge counts money only after work is accepted and
 
 ## Live scanner
 
-The dashboard now calls `/api/opportunities` on load and whenever **Scan now** is pressed. The server queries current open GitHub issues, deduplicates the results, extracts explicit dollar payouts, looks for payment-protection evidence, estimates effort conservatively, and ranks qualifying opportunities by Money Score.
+The dashboard now calls `/api/opportunities` on load and whenever **Scan now** is pressed. The server queries current open GitHub issues, deduplicates the results, extracts explicit dollar payouts, looks for payment-protection evidence, estimates effort conservatively, and ranks qualifying opportunities by Money Score. Ranking also accounts for freshness, scope clarity, familiar-stack signals, automation fit, and visible risk flags; the highest-ranked item is marked as the top verification target.
 
 GhostForge intentionally shows an honest empty state when nothing qualifies. Seeded/demo jobs are not used.
 
@@ -27,6 +27,7 @@ An opportunity currently qualifies only when all are true:
 - the GitHub issue is open
 - a dollar payout is explicitly present
 - recognized protection evidence is present (Algora, Polar, escrow, or funded milestone)
+- it was updated within the last 45 days
 - the probability-adjusted Money Score is positive
 
 Before starting, verify eligibility, current funding, acceptance criteria, applicant competition, payout currency, and platform terms at the linked source. Payment and acceptance are never guaranteed.
