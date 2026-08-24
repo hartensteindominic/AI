@@ -1,34 +1,46 @@
 # GhostForge
 
-A faceless developer revenue cockpit for finding, ranking, executing, and tracking fixed-scope coding opportunities.
+A private, faceless developer revenue cockpit for finding, ranking, pursuing, and tracking fixed-scope coding opportunities.
 
 ## Core principle
 
-Rank work by expected economic return rather than headline payout.
+Rank work by expected economic return rather than headline payout:
 
 `Money Score = payout × modeled acceptance probability ÷ estimated hours`
 
-## V1
+A listing is not income. GhostForge counts money only after work is accepted and paid.
 
-- Mobile-first revenue dashboard
-- Opportunity scanner interface
-- Probability-adjusted Money Score
-- Payment-protection and competition indicators
-- Opportunity analysis modal
-- Revenue pipeline
-- Human approval before submissions
+## Live scanner
 
-## Run
+The dashboard now calls `/api/opportunities` on load and whenever **Scan now** is pressed. The server queries current open GitHub issues, deduplicates the results, extracts explicit dollar payouts, looks for payment-protection evidence, estimates effort conservatively, and ranks qualifying opportunities by Money Score.
+
+GhostForge intentionally shows an honest empty state when nothing qualifies. Seeded/demo jobs are not used.
+
+### Vercel environment
+
+Set `GITHUB_TOKEN` to a fine-grained, read-only token for more reliable GitHub API limits. The scanner can use unauthenticated public API access at a lower rate limit. Do not expose the token with a `NEXT_PUBLIC_` prefix.
+
+## Qualification boundary
+
+An opportunity currently qualifies only when all are true:
+
+- the GitHub issue is open
+- a dollar payout is explicitly present
+- recognized protection evidence is present (Algora, Polar, escrow, or funded milestone)
+- the probability-adjusted Money Score is positive
+
+Before starting, verify eligibility, current funding, acceptance criteria, applicant competition, payout currency, and platform terms at the linked source. Payment and acceptance are never guaranteed.
+
+## Run and verify
 
 ```bash
 npm install
-npm run dev
+npm run build
+npm start
 ```
 
-Open `http://localhost:3000`.
+GitHub Actions runs the production build for pushes to `main` and `ghostforge-v1`, and for pull requests into `main`.
 
-## Next integrations
+## Guardrails
 
-GitHub opportunity analysis, real bounty/fixed-price feeds, repository inspection, acceptance-criteria extraction, build/test status, and payment tracking.
-
-GhostForge is decision-support software. Opportunity scores and earnings are estimates, not guarantees.
+GhostForge does not auto-apply, submit code, accept terms, move funds, or claim guaranteed earnings. Final pursuit and submission require human approval.
