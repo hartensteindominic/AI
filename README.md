@@ -1,70 +1,46 @@
-# AI Weekly Planner - FutureSelf
+# GhostForge
 
-An intelligent AI agent website that predicts and manages your next week.
+A private, faceless developer revenue cockpit for finding, ranking, pursuing, and tracking fixed-scope coding opportunities.
 
-## MVP
-- Create a Mini-Me profile
-- Define goals, routine, and decision style
-- Run a 7-day scenario simulation
-- Compare possible outcomes
-- View an actionable future report
+## Core principle
 
-## Features
+Rank work by expected economic return rather than headline payout:
 
-- 📅 Weekly schedule prediction and optimization
-- 🤖 AI-powered task management
-- 📊 Analytics and insights
-- 🔄 Automatic rescheduling
+`Money Score = payout × modeled acceptance probability ÷ estimated hours`
 
-## Getting Started
+A listing is not income. GhostForge counts money only after work is accepted and paid.
 
-### Prerequisites
-- Node.js 18+
-- Python 3.10+ (for AI backend)
+## Live scanner
 
-### Installation
+The dashboard now calls `/api/opportunities` on load and whenever **Scan now** is pressed. The server queries current open GitHub issues, deduplicates the results, extracts explicit dollar payouts, looks for payment-protection evidence, estimates effort conservatively, and ranks qualifying opportunities by Money Score.
+
+GhostForge intentionally shows an honest empty state when nothing qualifies. Seeded/demo jobs are not used.
+
+### Vercel environment
+
+Set `GITHUB_TOKEN` to a fine-grained, read-only token for more reliable GitHub API limits. The scanner can use unauthenticated public API access at a lower rate limit. Do not expose the token with a `NEXT_PUBLIC_` prefix.
+
+## Qualification boundary
+
+An opportunity currently qualifies only when all are true:
+
+- the GitHub issue is open
+- a dollar payout is explicitly present
+- recognized protection evidence is present (Algora, Polar, escrow, or funded milestone)
+- the probability-adjusted Money Score is positive
+
+Before starting, verify eligibility, current funding, acceptance criteria, applicant competition, payout currency, and platform terms at the linked source. Payment and acceptance are never guaranteed.
+
+## Run and verify
 
 ```bash
-# Clone the repository
-git clone https://github.com/hartensteindominic/AI.git
-cd AI
-
-# Install dependencies
 npm install
-pip install -r requirements.txt
+npm run build
+npm start
 ```
 
-### Running Locally
+GitHub Actions runs the production build for pushes to `main` and `ghostforge-v1`, and for pull requests into `main`.
 
-```bash
-# Development server
-npm run dev
+## Guardrails
 
-# Python backend
-python app.py
-```
-
-## Project Structure
-
-```
-├── frontend/          # React/Next.js frontend
-├── backend/           # Python AI backend
-├── models/            # AI models and predictions
-├── tests/             # Test suite
-└── docs/              # Documentation
-```
-
-## Development
-
-1. Create a feature branch from `main`
-2. Make your changes
-3. Submit a pull request
-4. Wait for CI/CD checks and code review
-5. Merge when approved
-
-## Product Principle
-This app does not claim to literally predict the future. It generates probabilistic scenarios from the user's supplied information and makes uncertainty visible.
-
-## License
-
-MIT
+GhostForge does not auto-apply, submit code, accept terms, move funds, or claim guaranteed earnings. Final pursuit and submission require human approval.
