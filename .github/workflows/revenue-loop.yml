@@ -1,0 +1,38 @@
+name: GhostForge revenue loop
+
+on:
+  schedule:
+    - cron: '23 */2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: ghostforge-revenue-loop
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Test ranking and safety filters
+        run: node --test scripts/scanner.test.mjs
+      - name: Scan and refresh the revenue queue
+        run: node scripts/revenue-scan.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHOSTFORGE_OUTPUT_DIR: .ghostforge-output
+          GHOSTFORGE_UPDATE_ISSUE: 'true'
+      - name: Save full scan results
+        uses: actions/upload-artifact@v4
+        with:
+          name: ghostforge-revenue-scan-${{ github.run_number }}
+          path: .ghostforge-output/
+          retention-days: 14
