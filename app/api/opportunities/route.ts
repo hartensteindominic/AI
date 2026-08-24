@@ -73,7 +73,7 @@ export async function GET() {
     });
 
     const now = Date.now();
-    const opportunities = [...unique.values()].map(issue => {
+    const opportunities = Array.from(unique.values()).map(issue => {
       const labels = issue.labels.map(label => typeof label === 'string' ? label : label.name || '').join(' ');
       const text = `${issue.title}\n${issue.body || ''}\n${labels}`;
       const payout = payoutOf(text);
