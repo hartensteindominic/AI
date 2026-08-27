@@ -20,5 +20,13 @@
     "@types/node": "22.17.2",
     "@types/react": "18.3.23",
     "@types/react-dom": "18.3.7"
+  },
+  "optionalDependencies": {
+    "@x402/core": "*",
+    "@x402/next": "*",
+    "@x402/evm": "*"
+  },
+  "comments": {
+    "optionalDependencies": "Install official x402 packages when ready: npm i @x402/core @x402/next @x402/evm — then swap lib/x402/withX402.ts for the real middleware."
   }
 }

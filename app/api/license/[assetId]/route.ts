@@ -9,20 +9,11 @@ import {
 import { issueLicense, consumeLicense } from '../../../../lib/x402/licenses';
 import { deliverAsset } from '../../../../lib/x402/assets';
 import { getX402Config } from '../../../../lib/x402/config';
+import { verifyAssetOwnership } from '../../../../lib/x402/ownership';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/**
- * Machine-use license endpoint.
- *
- * Flow:
- * 1. No payment header → 402 + Payment-Requirements
- * 2. Valid payment → settle → issue one-use license token → return license
- * 3. ?token=lic_... → consume license → return asset (once)
- *
- * Design: each successful x402 payment buys exactly one machine-use unit.
- */
 export async function GET(
   request: NextRequest,
   { params }: { params: { assetId: string } },
@@ -36,7 +27,7 @@ export async function GET(
   const url = new URL(request.url);
   const token = url.searchParams.get('token');
 
-  // --- Consume path: already paid, redeem one-use license ---
+  // --- Consume path ---
   if (token) {
     const record = await consumeLicense(token);
     if (!record || record.assetId !== assetId) {
@@ -46,12 +37,25 @@ export async function GET(
       );
     }
 
-    const delivered = deliverAsset(item);
+    const delivered = deliverAsset(item, url.origin);
     return NextResponse.json({
       ok: true,
       licenseToken: token,
       ...delivered,
     });
+  }
+
+  // Optional on-chain ownership gate before quoting a price
+  const ownership = await verifyAssetOwnership(assetId);
+  if (ownership.required && !ownership.owned) {
+    return NextResponse.json(
+      {
+        error: 'Asset ownership not verified on-chain',
+        reason: ownership.reason,
+        owner: ownership.owner,
+      },
+      { status: 403 },
+    );
   }
 
   // --- Payment path ---
@@ -68,6 +72,7 @@ export async function GET(
       x402Version: 1,
       accepts: [requirements],
       error: 'Payment required for one machine-use license',
+      ownershipChecked: ownership.required,
     };
     return NextResponse.json(body, {
       status: 402,
@@ -116,6 +121,7 @@ export async function GET(
       redeemUrl: `${resourceUrl}?token=${license.token}`,
       settlementTx: settlement.tx,
       mockMode: cfg.mockMode,
+      ownershipChecked: ownership.required,
       message: 'One machine-use license issued. Redeem once via redeemUrl.',
     },
     {
