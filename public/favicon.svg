@@ -1,6 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="16" fill="#0b0912"/>
-  <path d="m32 10 20 11v22L32 54 12 43V21l20-11Z" fill="#9c7cff"/>
-  <path d="m32 10 20 11-20 11-20-11 20-11Z" fill="#ff8066"/>
-  <path d="M32 32 12 21v22l20 11V32Z" fill="#66e7c4"/>
+  <rect width="64" height="64" rx="14" fill="#0b0c0a"/>
+  <!-- Isometric voxel cube mark -->
+  <path d="M32 12 L50 22 V42 L32 52 L14 42 V22 Z" fill="#1a1c18"/>
+  <path d="M32 12 L50 22 L32 32 L14 22 Z" fill="#c8cfc0"/>
+  <path d="M32 32 L50 22 V42 L32 52 Z" fill="#8a9a7a"/>
+  <path d="M32 32 L14 22 V42 L32 52 Z" fill="#6b7a5e"/>
 </svg>

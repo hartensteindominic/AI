@@ -55,6 +55,10 @@ Full documentation: [docs/x402-licensing.md](docs/x402-licensing.md)
 | `X402_FACILITATOR_URL` | `https://x402.org/facilitator` | |
 | `X402_NETWORK` | `eip155:84532` | Base Sepolia |
 | `X402_LICENSE_TTL_MS` | `900000` | 15 min unconsumed TTL |
+| `LICENSE_STORE` | `memory` | Set `redis` + Upstash env for durable multi-instance store |
+| `UPSTASH_REDIS_REST_URL` | — | Required when `LICENSE_STORE=redis` |
+| `UPSTASH_REDIS_REST_TOKEN` | — | Required when `LICENSE_STORE=redis` |
+| `ASSET_BASE_URL` | — | Base URL for asset downloads after license consume |
 
 Set `X402_MOCK=false` + real `X402_PAY_TO` to collect live USDC.
 

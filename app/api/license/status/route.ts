@@ -6,9 +6,9 @@ import { listCatalog } from '../../../../lib/x402/catalog';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/** Health / status for the licensing core */
 export async function GET() {
   const cfg = getX402Config();
+  const stats = await licenseStats();
   return NextResponse.json({
     product: 'AI Licensing',
     model: 'each x402 payment → exactly one machine-use license unit',
@@ -16,7 +16,8 @@ export async function GET() {
     network: cfg.network,
     payToConfigured: Boolean(cfg.payTo && !cfg.payTo.startsWith('0x0000')),
     facilitatorUrl: cfg.facilitatorUrl,
+    licenseStore: (process.env.LICENSE_STORE || 'memory').toLowerCase(),
     catalogSize: listCatalog().length,
-    licenses: licenseStats(),
+    licenses: stats,
   });
 }
