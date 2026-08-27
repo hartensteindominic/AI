@@ -1,21 +1,62 @@
-# Voxel Creator Pack
+# AI / Voxel Creator Pack + Machine Licensing
 
-A direct-response digital product built for paid social traffic: 30 original voxel-style SVG assets for $9.99 with commercial-use rights in finished projects.
+Two products in one repo:
 
-## Product
+1. **Voxel Creator Pack** — human checkout ($9.99 Stripe) for a commercial-use asset pack.
+2. **AI Licensing (x402)** — machine-use one-license-unit sales via the open x402 payment protocol.
 
-- 30 separate scalable SVG assets
-- Transparent backgrounds
-- Recolorable and editable vector files
+## Voxel Creator Pack (human path)
+
+- 30 original voxel-style SVG assets
+- Transparent backgrounds, recolorable vectors
 - Commercial use in finished work and client projects
-- README + license included in the generated ZIP
-- No subscription or crypto
+- `POST /api/checkout` → Stripe Checkout ($9.99)
+- `GET /api/verify?session_id=…` → unlock ZIP download
 
-## Sales flow
+Set `STRIPE_SECRET_KEY` in production.
 
-The landing page previews all 30 assets and uses one repeated purchase CTA. `POST /api/checkout` creates a $9.99 Stripe Checkout Session. Stripe returns the buyer with a Checkout Session ID; `GET /api/verify` verifies that Stripe reports the session as paid and that it belongs to this product. Only then does the page expose the ZIP download action.
+## AI Licensing — x402 machine-use core (V1)
 
-Set `STRIPE_SECRET_KEY` in the production hosting environment. If Stripe is not configured or is temporarily unavailable, the purchase button falls back to a prefilled purchase email rather than becoming a dead end.
+**Design rule:** each successful x402 payment buys **exactly one machine-use license unit** (not ownership, not unlimited reuse). After the license is consumed, the next request requires a new payment. That is the mechanism that makes “bot uses asset → bot pays again” enforceable.
+
+### Endpoints
+
+| Method | Path | Purpose |
+|--------|------|--------|
+| GET | `/api/license/catalog` | Public catalog + prices |
+| GET | `/api/license/:assetId` | 402 gate → issue one-use license, or redeem with `?token=` |
+| GET | `/api/license/status` | Health, mockMode, license stats |
+
+### Quick flow
+
+```bash
+# 1. Catalog
+curl -s localhost:3000/api/license/catalog | jq
+
+# 2. Request asset → receive 402
+curl -i localhost:3000/api/license/voxel-pack-core
+
+# 3. (In mockMode) retry with any valid-looking payment header → receive licenseToken
+curl -s -H 'X-PAYMENT: {"x402Version":1,"scheme":"exact"}' \
+  localhost:3000/api/license/voxel-pack-core | jq
+
+# 4. Redeem once
+curl -s 'localhost:3000/api/license/voxel-pack-core?token=lic_…' | jq
+```
+
+Full documentation: [docs/x402-licensing.md](docs/x402-licensing.md)
+
+### Configuration
+
+| Variable | Default | Notes |
+|----------|---------|-------|
+| `X402_MOCK` | `true` | Local accept without facilitator |
+| `X402_PAY_TO` | zero address | Merchant receive address |
+| `X402_FACILITATOR_URL` | `https://x402.org/facilitator` | |
+| `X402_NETWORK` | `eip155:84532` | Base Sepolia |
+| `X402_LICENSE_TTL_MS` | `900000` | 15 min unconsumed TTL |
+
+Set `X402_MOCK=false` + real `X402_PAY_TO` to collect live USDC.
 
 ## Run locally
 
