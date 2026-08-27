@@ -1,9 +1,5 @@
 /**
  * Asset delivery after a one-use license is consumed.
- *
- * V1 returns a structured descriptor + optional public path.
- * When ASSET_BASE_URL is set, returns a short-lived style download URL
- * (caller can later swap in signed S3/R2 URLs).
  */
 
 import type { CatalogItem } from './catalog';
@@ -14,25 +10,40 @@ export interface DeliveredAsset {
   mimeType: string;
   assetKey: string;
   downloadUrl?: string;
-  /** Placeholder content when no binary is available yet */
   placeholder?: string;
   consumedAt: string;
   message: string;
 }
 
-export function deliverAsset(item: CatalogItem): DeliveredAsset {
+/** Map catalog assetKey → public path when samples exist in /public/assets */
+const LOCAL_SAMPLES: Record<string, string> = {
+  'voxel-hero.svg': '/assets/voxel-hero.svg',
+  'voxel-environment.zip': '/assets/voxel-environment.svg',
+  'voxel-pack-core.zip': '/assets/voxel-hero.svg',
+};
+
+export function deliverAsset(item: CatalogItem, origin?: string): DeliveredAsset {
   const base = (process.env.ASSET_BASE_URL || '').replace(/\/$/, '');
-  const downloadUrl = base ? `${base}/${item.assetKey}` : undefined;
+  const local = LOCAL_SAMPLES[item.assetKey];
+
+  let downloadUrl: string | undefined;
+  if (base) {
+    downloadUrl = `${base}/${item.assetKey}`;
+  } else if (local && origin) {
+    downloadUrl = `${origin}${local}`;
+  } else if (local) {
+    downloadUrl = local;
+  }
 
   return {
     assetId: item.id,
     name: item.name,
-    mimeType: item.mimeType,
+    mimeType: item.mimeType.startsWith('image/') ? item.mimeType : 'image/svg+xml',
     assetKey: item.assetKey,
     downloadUrl,
     placeholder: downloadUrl
       ? undefined
-      : `/* AI Licensing V1 placeholder for ${item.assetKey} — wire ASSET_BASE_URL or binary store */`,
+      : `/* Wire ASSET_BASE_URL or place files under public/assets */`,
     consumedAt: new Date().toISOString(),
     message:
       'One-use license consumed. Re-request of this asset requires a new x402 payment.',
