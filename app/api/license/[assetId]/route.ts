@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCatalogItem } from '../../../../lib/x402/catalog';
-import { buildRequirements, verifyPayment, settlePayment, type PaymentPayload } from '../../../../lib/x402/payment';
-import { issueLicense, consumeLicense, peekLicense } from '../../../../lib/x402/licenses';
+import {
+  buildRequirements,
+  verifyPayment,
+  settlePayment,
+  type PaymentPayload,
+} from '../../../../lib/x402/payment';
+import { issueLicense, consumeLicense } from '../../../../lib/x402/licenses';
+import { deliverAsset } from '../../../../lib/x402/assets';
 import { getX402Config } from '../../../../lib/x402/config';
 
 export const runtime = 'nodejs';
@@ -32,7 +38,7 @@ export async function GET(
 
   // --- Consume path: already paid, redeem one-use license ---
   if (token) {
-    const record = consumeLicense(token);
+    const record = await consumeLicense(token);
     if (!record || record.assetId !== assetId) {
       return NextResponse.json(
         { error: 'License invalid, expired, or already used' },
@@ -40,17 +46,11 @@ export async function GET(
       );
     }
 
-    // V1: return a signed delivery descriptor instead of binary.
-    // Replace with real asset bytes / signed S3 URL in production.
+    const delivered = deliverAsset(item);
     return NextResponse.json({
       ok: true,
-      assetId,
-      name: item.name,
-      mimeType: item.mimeType,
-      assetKey: item.assetKey,
       licenseToken: token,
-      consumedAt: new Date().toISOString(),
-      message: 'One-use license consumed. Re-request requires a new x402 payment.',
+      ...delivered,
     });
   }
 
@@ -64,7 +64,6 @@ export async function GET(
   const requirements = buildRequirements(item, resourceUrl);
 
   if (!paymentHeader) {
-    // Standard x402 402 response
     const body = {
       x402Version: 1,
       accepts: [requirements],
@@ -81,7 +80,6 @@ export async function GET(
 
   let paymentPayload: PaymentPayload;
   try {
-    // Clients may send raw JSON or base64
     const raw = paymentHeader.startsWith('{')
       ? paymentHeader
       : Buffer.from(paymentHeader, 'base64').toString('utf8');
@@ -106,8 +104,7 @@ export async function GET(
     );
   }
 
-  // Payment succeeded → issue exactly one machine-use license unit
-  const license = issueLicense(assetId, verification.paymentRef || settlement.tx);
+  const license = await issueLicense(assetId, verification.paymentRef || settlement.tx);
   const cfg = getX402Config();
 
   return NextResponse.json(
